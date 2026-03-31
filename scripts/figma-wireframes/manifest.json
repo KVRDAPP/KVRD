@@ -1,0 +1,7 @@
+{
+  "name": "KVRD Wireframes Generator",
+  "id": "kvrd-wireframes-generator-001",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"]
+}
