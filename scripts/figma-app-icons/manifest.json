@@ -1,0 +1,8 @@
+{
+  "name": "KVRD App Icon Concepts",
+  "id": "kvrd-app-icon-concepts-001",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"]
+}

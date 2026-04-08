@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    background: #0A0A0A;
+    color: #F5EFE6;
+    padding: 20px 20px 16px;
+    user-select: none;
+  }
+
+  h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #C9943A;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  #status {
+    font-size: 12px;
+    color: #888;
+    min-height: 18px;
+    margin-bottom: 16px;
+    transition: color 0.2s;
+  }
+  #status.ok  { color: #22c55e; }
+  #status.err { color: #ef4444; }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+    min-height: 24px;
+  }
+  .tag {
+    background: #1B4332;
+    color: #F5EFE6;
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+
+  button {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  button:hover:not(:disabled) { opacity: 0.82; }
+  button:disabled { opacity: 0.35; cursor: default; }
+
+  #exportBtn  { background: #C9943A; color: #0A0A0A; }
+  #closeBtn   { background: #1C1C1C; color: #F5EFE6; border: 1px solid #2e2e2e; }
+</style>
+</head>
+<body>
+
+<h2>App Icon Concepts</h2>
+<div id="status">Initialising…</div>
+<div class="tags" id="tags"></div>
+
+<div class="actions">
+  <button id="exportBtn" disabled>Export @2x PNG</button>
+  <button id="closeBtn">Close</button>
+</div>
+
+<script>
+  const statusEl  = document.getElementById('status');
+  const tagsEl    = document.getElementById('tags');
+  const exportBtn = document.getElementById('exportBtn');
+  const closeBtn  = document.getElementById('closeBtn');
+
+  function setStatus(text, cls = '') {
+    statusEl.textContent = text;
+    statusEl.className = cls;
+  }
+
+  exportBtn.addEventListener('click', () => {
+    exportBtn.disabled = true;
+    setStatus('Exporting…');
+    parent.postMessage({ pluginMessage: { type: 'export' } }, '*');
+  });
+
+  closeBtn.addEventListener('click', () => {
+    parent.postMessage({ pluginMessage: { type: 'close' } }, '*');
+  });
+
+  window.addEventListener('message', ({ data }) => {
+    const msg = data.pluginMessage;
+    if (!msg) return;
+
+    if (msg.type === 'status') {
+      setStatus(msg.text);
+    }
+
+    if (msg.type === 'done') {
+      setStatus(`✓ ${msg.frameNames.length} frames created on "App Icon Concepts"`, 'ok');
+      tagsEl.innerHTML = msg.frameNames
+        .map(n => `<span class="tag">${n}</span>`)
+        .join('');
+      exportBtn.disabled = false;
+    }
+
+    if (msg.type === 'download') {
+      const { exports } = msg;
+      for (const { name, bytes } of exports) {
+        const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = `${name}@2x.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      setStatus(`✓ ${exports.length} files downloaded`, 'ok');
+      exportBtn.disabled = false;
+    }
+
+    if (msg.type === 'error') {
+      setStatus(`Error: ${msg.text}`, 'err');
+      exportBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
